@@ -1,8 +1,9 @@
 '''Endpoints to interact with server.'''
 
 import falcon # pylint: disable=E0401
+import jsons
 
-from backupinator import Server, Job
+from backupinator import Server, Job, RegisterClientJob, CheckinClientJob, GetTreeJob
 
 # Make an instance of the server to pass to resource objects
 SERVER = Server()
@@ -16,8 +17,8 @@ class ProcessJob:
         # Get data from request
         data = req.media
 
-        # Construct a job object
-        job = Job(data)
+        # Deserialize the job object
+        job = jsons.load(data, globals()[data['job_type']])
 
         # Send to job handler and get response
         msg = SERVER.job_handler(job)

@@ -18,11 +18,9 @@ def get_config_val(key, valtype='str'):
         return config['DEFAULT'][key]
     if valtype == 'int':
         return config.getint('DEFAULT', key)
-    #
-    # # Coerce a type:
-    # return {
-    #     'str': ,
-    #     'int': ,
-    #     'float': config.getfloat('DEFAULT', key),
-    #     'bool': config.getboolean('DEFAULT', key)
-    # }[valtype]
+    if valtype == 'float':
+        return config.getfloat('DEFAULT', key)
+    if valtype == 'bool':
+        return config.getboolean('DEFAULT', key)
+
+    raise ValueError('valtype not supported!')

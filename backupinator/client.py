@@ -8,7 +8,8 @@ from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 from Cryptodome.Signature import pkcs1_15 # pylint: disable=E0401
 from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
-from backupinator import Job
+from backupinator import (
+    RegisterClientJob, CheckinClientJob, GetTreeJob, Auth)
 from backupinator.utils import get_config_val, random_string
 
 class Client:
@@ -93,20 +94,15 @@ class Client:
         hashed = SHA256.new(message.encode())
         key = RSA.import_key(self.rsa_priv_key)
         signature = pkcs1_15.new(key).sign(hashed)
-        return(message, signature.hex())
+        return Auth(message, signature.hex())
 
     def register(self):
         '''Register with the server.'''
 
         # Create a registration job
-        message, signature = self.sign_with_priv_key()
-        job = Job({
-            'job_type': 'register_client',
-            'client_name': self.client_name,
-            'rsa_pub_key': self.rsa_pub_key.decode(),
-            'message': message,
-            'signature': signature,
-        })
+        auth = self.sign_with_priv_key()
+        job = RegisterClientJob(
+            self.client_name, self.rsa_pub_key.decode(), auth)
 
         # Submit the job
         _resp = job.submit()
@@ -117,14 +113,8 @@ class Client:
         '''Tell the server that we are active.'''
 
         # Create a checkin job
-        message, signature = self.sign_with_priv_key()
-        job = Job({
-            'job_type': 'checkin_client',
-            'client_name': self.client_name,
-            'target_list': self.targets,
-            'message': message,
-            'signature': signature,
-        })
+        auth = self.sign_with_priv_key()
+        job = CheckinClientJob(self.client_name, self.targets, auth)
 
         # Submit the job
         resp = job.submit()
@@ -144,14 +134,8 @@ class Client:
     def sync_target(self, target_name):
         '''Ask server for target's tree so we know what to send.'''
 
-        message, signature = self.sign_with_priv_key()
-        job = Job({
-            'job_type': 'get_tree',
-            'client_name': self.client_name,
-            'target_name': target_name,
-            'message': message,
-            'signature': signature,
-        })
+        auth = self.sign_with_priv_key()
+        job = GetTreeJob(self.client_name, target_name, auth)
 
     def list_jobs(self):
         '''Print out a list of all jobs this client has.'''
