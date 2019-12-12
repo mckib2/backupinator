@@ -4,6 +4,8 @@ from random import choice
 import string
 import configparser
 import pathlib
+from time import time
+import hashlib
 
 from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 
@@ -85,3 +87,30 @@ def load_client_rsa_key(client_name, public=True):
         key = file.read()
 
     return key.decode()
+
+def make_tree(hash_filenames=True, hash_times=True):
+    '''Create hashes of filenames.'''
+
+    # Get tracked files from config
+    tracked_dirs = get_config_val('tracked_dirs').split(',')
+
+    tree = {}
+    t0 = time()
+    for d in tracked_dirs:
+        for file in pathlib.Path(d).rglob('*'):
+            if file.is_file():
+
+                key = str(file)
+                if hash_filenames:
+                    key = hashlib.sha224(key.encode()).hexdigest()
+
+                val = str(file.stat().st_mtime)
+                if hash_times:
+                    val = hashlib.sha224(val.encode()).hexdigest()
+
+                # Update file tree (list really...)
+                tree[key] = val
+    # print(tree)
+    print('Took %g sec to find all files' % (time() - t0))
+
+    return tree

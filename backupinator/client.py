@@ -11,7 +11,7 @@ from backupinator import Auth
 from backupinator.job import *
 from backupinator.utils import (
     get_config_val, random_string, make_rsa_keys,
-    client_rsa_key_filename, load_client_rsa_key)
+    client_rsa_key_filename, load_client_rsa_key, make_tree)
 
 class Client:
     '''Produce jobs to send to server.'''
@@ -53,6 +53,11 @@ class Client:
         # Read signature length from the config file
         self.auto_signature_len = get_config_val(
             'auto_signature_len', valtype='int')
+
+        # Get current state of file tree
+        hash_filenames = get_config_val('hash_filenames', valtype='bool')
+        hash_times = get_config_val('hash_times', valtype='bool')
+        self.tree = make_tree(hash_filenames, hash_times)
 
     def sign_with_priv_key(self, message=None):
         '''Sign message with private key.'''
@@ -104,6 +109,16 @@ class Client:
         for target in json_data['online_targets']:
             self.jobs[target] += self.defered_jobs[target].copy()
             self.defered_jobs[target] = []
+
+    def send_chunk(self, chunk):
+        '''Send a chunk to targets.'''
+
+        # Send jobs to online targets
+
+        # Queue jobs for offline_targets
+
+    def calculate_chunks(self, filename):
+        '''Calculate chunks for a changed file.'''
 
 
     def sync_target(self, target_name):
