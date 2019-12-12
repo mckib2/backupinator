@@ -14,11 +14,15 @@ def random_string(nchar=10):
     '''Generate a random string of fixed length.'''
     return ''.join(choice(string.ascii_letters) for i in range(nchar))
 
-def get_config_val(key, valtype='str'):
+def get_client_config_filename(client_name):
+    '''Conventionalize client config file name.'''
+    return 'client_data/%s/client.ini' % client_name
+
+def get_generic_config_val(filename, key, valtype='str'):
     '''Read value from config file.'''
 
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(filename)
 
     if valtype == 'str':
         return config['DEFAULT'][key]
@@ -89,11 +93,13 @@ def load_client_rsa_key(client_name, public=True):
 
     return key.decode()
 
-def make_tree(hash_filenames=True, hash_times=True):
+def make_tree(client_name, hash_filenames=True, hash_times=True):
     '''Create hashes of filenames.'''
 
     # Get tracked files from config
-    tracked_dirs = get_config_val('tracked_dirs').split(',')
+    configfile = get_client_config_filename(client_name)
+    tracked_dirs = get_generic_config_val(
+        configfile, 'tracked_dirs').split(',')
 
     tree = {}
     t0 = time()
