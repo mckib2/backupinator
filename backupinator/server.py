@@ -7,8 +7,8 @@ from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 from Cryptodome.Signature import pkcs1_15 # pylint: disable=E0401
 from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
-from backupinator import (
-    DB, Job, RegisterClientJob, CheckinClientJob, GetTreeJob)
+from backupinator import DB
+from backupinator.job import *
 
 class Server:
     '''Coordinating server to handle jobs.'''
@@ -42,10 +42,10 @@ class Server:
             # decode hex signature
             signature = bytes.fromhex(auth['hex_signature'])
             pkcs1_15.new(key).verify(hashed, signature)
-            logging.info('Authentication successful!')
+            logging.debug('Authentication successful!')
             return True
         except (ValueError, TypeError):
-            logging.info('Unable to authenticate client: %s', client_name)
+            logging.debug('Unable to authenticate client: %s', client_name)
             logging.debug(
                 'Data dump: %s', {
                     'client_name': client_name,
@@ -59,10 +59,16 @@ class Server:
         '''Given a job, decide what to do about it.'''
 
         # Sanity check
+        logging.debug('Incoming job is a %s', type(job))
         assert isinstance(job, Job), 'Must use a Job object!'
 
+        # If it's a batch job, call job_handler on each
+        if isinstance(job, BatchJob):
+            logging.info('Batch job: processing each and returning '
+                         'results as a list.')
+            return [self.job_handler(jsons.load(j, globals()[j['job_type']])) for j in job.jobs]
+
         # Do the right thing based on job type
-        logging.debug('Incoming job is a %s', type(job))
         return {
             RegisterClientJob: self.register_client,
             CheckinClientJob: self.checkin_client,
@@ -85,7 +91,8 @@ class Server:
         if not self.authenticate_client(job.client_name, job.auth):
             res = {
                 'success': False,
-                'msg': 'Could not authenticate client!'
+                'msg': 'Could not authenticate client!',
+                'job_uuid': job.uuid,
             }
             logging.info('Returning: %s', res)
             return res
@@ -103,6 +110,7 @@ class Server:
             'success': True,
             'online_targets': online_targets,
             'offline_targets': offline_targets,
+            'job_uuid': job.uuid
         }
         logging.info('Returning: %s', res)
         return res

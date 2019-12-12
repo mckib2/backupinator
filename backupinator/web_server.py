@@ -1,9 +1,10 @@
 '''Endpoints to interact with server.'''
 
 import falcon # pylint: disable=E0401
-import jsons
+import jsons # pylint: disable=E0401
 
-from backupinator import Server, Job, RegisterClientJob, CheckinClientJob, GetTreeJob
+from backupinator import Server
+from backupinator.job import * # allow all job types
 
 # Make an instance of the server to pass to resource objects
 SERVER = Server()

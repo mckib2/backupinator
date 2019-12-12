@@ -1,7 +1,8 @@
 '''Encapuslation of a job.'''
 
+import uuid
 import requests
-import jsons
+import jsons # pylint: disable=E0401
 
 from backupinator.utils import get_config_val
 
@@ -9,7 +10,13 @@ class Job:
     '''A task to be done by client or target.'''
 
     def __init__(self):
-        pass
+        # Every job needs to know what kind of job it is for
+        # deserialization:
+        self.job_type = self.__class__.__name__
+
+        # Give the job a unique id (uuid4 should be good enough
+        # for our purposes)
+        self.uuid = uuid.uuid4()
 
     def submit(self):
         '''Send the job to the server and return response.'''
@@ -18,8 +25,20 @@ class Job:
         server_address = get_config_val('server_address')
 
         # Send a POST with this job
-        self.job_type = self.__class__.__name__
         return requests.post(server_address, json=jsons.dump(self))
+
+class BatchJob(Job):
+    '''A group of job objects to be sent to the server all at once.'''
+
+    def __init__(self):
+        self.jobs = []
+
+        # Call parent's init
+        super(BatchJob, self).__init__()
+
+    def addjob(self, job):
+        '''Add a job to the batch.'''
+        self.jobs.append(job)
 
 class RegisterClientJob(Job):
     '''Register a client'''

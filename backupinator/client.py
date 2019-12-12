@@ -7,8 +7,8 @@ from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 from Cryptodome.Signature import pkcs1_15 # pylint: disable=E0401
 from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
-from backupinator import (
-    RegisterClientJob, CheckinClientJob, GetTreeJob, Auth)
+from backupinator import Auth
+from backupinator.job import *
 from backupinator.utils import (
     get_config_val, random_string, make_rsa_keys,
     client_rsa_key_filename, load_client_rsa_key)
@@ -117,21 +117,32 @@ class Client:
         print('Jobs: ', json.dumps(self.jobs, indent=2))
         print('Defered: ', json.dumps(self.defered_jobs, indent=2))
 
-    def dummy_jobs(self):
+    def dummy_jobs(self, num=10):
         '''Add dummy test jobs.'''
 
-        # for
+        job = BatchJob()
+        for _ii in range(num):
+            auth = self.sign_with_priv_key()
+            job.addjob(CheckinClientJob(
+                self.client_name, self.targets, auth))
+        resp = job.submit()
+
+        json_data = json.loads(resp.text)
+        print(json_data)
 
 
 if __name__ == '__main__':
 
     client = Client()
 
-    # Try registering
-    client.register()
+    # # Try sending a batch job
+    # client.dummy_jobs()
 
-    # Try checking in
-    client.checkin()
+    # # Try registering
+    # client.register()
+    #
+    # # Try checking in
+    # client.checkin()
 
     # # Checkout job queues
     # client.list_jobs()
