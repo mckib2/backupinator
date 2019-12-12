@@ -2,12 +2,13 @@
 
 import pathlib
 import json
+import logging
 
 from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 from Cryptodome.Signature import pkcs1_15 # pylint: disable=E0401
 from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
-from backupinator import Auth
+from backupinator import Auth, ClientDB
 from backupinator.job import *
 from backupinator.utils import (
     get_config_val, random_string, make_rsa_keys,
@@ -17,6 +18,10 @@ class Client:
     '''Produce jobs to send to server.'''
 
     def __init__(self):
+
+        # Set debug level
+        log_format = "%(levelname)s:[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+        logging.basicConfig(format=log_format, level=logging.DEBUG)
 
         # Get client name from config
         self.client_name = get_config_val('client_name')
@@ -54,10 +59,9 @@ class Client:
         self.auto_signature_len = get_config_val(
             'auto_signature_len', valtype='int')
 
-        # Get current state of file tree
-        hash_filenames = get_config_val('hash_filenames', valtype='bool')
-        hash_times = get_config_val('hash_times', valtype='bool')
-        self.tree = make_tree(hash_filenames, hash_times)
+        # Sync up the database with the filesystem
+        self.client_db = ClientDB(self.client_name)
+        self.client_db.sync()
 
     def sign_with_priv_key(self, message=None):
         '''Sign message with private key.'''
@@ -156,8 +160,8 @@ if __name__ == '__main__':
     # # Try registering
     # client.register()
     #
-    # # Try checking in
-    # client.checkin()
+    # Try checking in
+    client.checkin()
 
     # # Checkout job queues
     # client.list_jobs()

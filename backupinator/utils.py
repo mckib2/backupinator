@@ -6,6 +6,7 @@ import configparser
 import pathlib
 from time import time
 import hashlib
+import logging
 
 from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 
@@ -111,6 +112,6 @@ def make_tree(hash_filenames=True, hash_times=True):
                 # Update file tree (list really...)
                 tree[key] = val
     # print(tree)
-    print('Took %g sec to find all files' % (time() - t0))
+    logging.info('Took %g sec to find all files', (time() - t0))
 
     return tree

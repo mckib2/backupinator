@@ -6,6 +6,8 @@ import jsons # pylint: disable=E0401
 
 from backupinator.utils import get_config_val
 
+__all__ = ['Job', 'BatchJob', 'RegisterClientJob', 'CheckinClientJob', 'GetTreeJob']
+
 class Job:
     '''A task to be done by client or target.'''
 
