@@ -1,7 +1,6 @@
 '''Client to send jobs to server.'''
 
 import pathlib
-from time import time
 import json
 
 from Cryptodome.PublicKey import RSA # pylint: disable=E0401
@@ -10,7 +9,9 @@ from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
 from backupinator import (
     RegisterClientJob, CheckinClientJob, GetTreeJob, Auth)
-from backupinator.utils import get_config_val, random_string
+from backupinator.utils import (
+    get_config_val, random_string, make_rsa_keys,
+    client_rsa_key_filename, load_client_rsa_key)
 
 class Client:
     '''Produce jobs to send to server.'''
@@ -42,43 +43,12 @@ class Client:
             self.local_target.mkdir(parents=True, exist_ok=True)
 
         # Generate an RSA key pair if none exists
-        dirpath = pathlib.Path(
-            'client_data/%s/rsa_keys/' % self.client_name)
-        rsa_pub_key_filename = (
-            dirpath / 'backupinator_rsa_public_key.pem')
-        rsa_priv_key_filename = (
-            dirpath / 'backupinator_rsa_private_key.pem')
-        infopath = pathlib.Path(dirpath / 'backupinator_rsa_info.txt')
-        if not infopath.exists():
-
-            # Write the private key
-            key_size = 2048
-            key = RSA.generate(key_size)
-            private_key = key.export_key()
-            rsa_priv_key_filename.parents[0].mkdir(parents=True, exist_ok=True)
-            with open(str(rsa_priv_key_filename), 'wb') as file:
-                file.write(private_key)
-
-            # Write the public key
-            public_key = key.publickey().export_key()
-            rsa_pub_key_filename.parents[0].mkdir(
-                parents=True, exist_ok=True)
-            with open(str(rsa_pub_key_filename), 'wb') as file:
-                file.write(public_key)
-
-            # Write the info file
-            infopath.parents[0].mkdir(parents=True, exist_ok=True)
-            with open(str(infopath), 'w') as file:
-                file.write(
-                    'key_size=%d\ntimestamp=%d' % (key_size, time()))
-
-        # Load RSA public key
-        with open(str(rsa_pub_key_filename), 'rb') as file:
-            self.rsa_pub_key = file.read()
-
-        # Load RSA private key
-        with open(str(rsa_priv_key_filename), 'rb') as file:
-            self.rsa_priv_key = file.read()
+        public_filename = client_rsa_key_filename(
+            self.client_name, public=True)
+        private_filename = client_rsa_key_filename(
+            self.client_name, public=False)
+        make_rsa_keys(
+            public_filename, private_filename, key_size=2048)
 
         # Read signature length from the config file
         self.auto_signature_len = get_config_val(
@@ -91,18 +61,23 @@ class Client:
         if message is None:
             message = random_string(self.auto_signature_len)
 
+        # Load the private key
+        priv_key = load_client_rsa_key(self.client_name, public=False)
+
         hashed = SHA256.new(message.encode())
-        key = RSA.import_key(self.rsa_priv_key)
+        key = RSA.import_key(priv_key)
         signature = pkcs1_15.new(key).sign(hashed)
         return Auth(message, signature.hex())
 
     def register(self):
         '''Register with the server.'''
 
+        # Load the public key
+        pub_key = load_client_rsa_key(self.client_name)
+
         # Create a registration job
         auth = self.sign_with_priv_key()
-        job = RegisterClientJob(
-            self.client_name, self.rsa_pub_key.decode(), auth)
+        job = RegisterClientJob(self.client_name, pub_key, auth)
 
         # Submit the job
         _resp = job.submit()
@@ -158,5 +133,5 @@ if __name__ == '__main__':
     # Try checking in
     client.checkin()
 
-    # Checkout job queues
-    client.list_jobs()
+    # # Checkout job queues
+    # client.list_jobs()

@@ -1,20 +1,28 @@
 '''Server handles passing of jobs between clients and targets.'''
 
 from time import time
+import logging
 
 from Cryptodome.PublicKey import RSA # pylint: disable=E0401
 from Cryptodome.Signature import pkcs1_15 # pylint: disable=E0401
 from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
-from backupinator import DB, Job, RegisterClientJob, CheckinClientJob, GetTreeJob
+from backupinator import (
+    DB, Job, RegisterClientJob, CheckinClientJob, GetTreeJob)
 
 class Server:
     '''Coordinating server to handle jobs.'''
 
     def __init__(self, client_db_name='client_db'):
 
+        # Set debug level
+        log_format = "%(levelname)s:[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+        logging.basicConfig(format=log_format, level=logging.DEBUG)
+
+        # Hook up to the client database
         self.client_db = DB(client_db_name)
 
+        # Keep a running list of clients and targets
         self.clients = {}
         self.targets = {}
 
@@ -23,16 +31,28 @@ class Server:
         '''Make sure client's signature is correct.'''
 
         if rsa_pub_key is None:
+            logging.debug('Looking up RSA key in client database...')
             rsa_pub_key = self.client_db.get(client_name)
+            logging.debug('Was RSA key found? %s', rsa_pub_key is not None)
 
         # auth ends up as a dictionary after deserialization...
         hashed = SHA256.new(auth['message'].encode())
         key = RSA.import_key(rsa_pub_key)
         try:
-            pkcs1_15.new(key).verify(
-                hashed, bytes.fromhex(auth['hex_signature']))
+            # decode hex signature
+            signature = bytes.fromhex(auth['hex_signature'])
+            pkcs1_15.new(key).verify(hashed, signature)
+            logging.info('Authentication successful!')
             return True
         except (ValueError, TypeError):
+            logging.info('Unable to authenticate client: %s', client_name)
+            logging.debug(
+                'Data dump: %s', {
+                    'client_name': client_name,
+                    'auth': auth,
+                    'rsa_pub_key': rsa_pub_key,
+                    'signature': signature,
+                    'hashed': hashed})
             return False
 
     def job_handler(self, job):
@@ -42,6 +62,7 @@ class Server:
         assert isinstance(job, Job), 'Must use a Job object!'
 
         # Do the right thing based on job type
+        logging.debug('Incoming job is a %s', type(job))
         return {
             RegisterClientJob: self.register_client,
             CheckinClientJob: self.checkin_client,
@@ -51,18 +72,10 @@ class Server:
     def register_client(self, job):
         '''Add a client to the database.'''
 
-        # Authenticate
-        if self.authenticate_client(
-                job.client_name, job.auth, job.rsa_pub_key):
-            self.client_db.add(job.client_name, job.rsa_pub_key)
-            return {
-                'success': True
-            }
-
-        return {
-            'success': False,
-            'msg': 'Could not authenticate client!'
-        }
+        # Need to do something to make sure that client is allowed
+        # to register?
+        self.client_db.add(job.client_name, job.rsa_pub_key)
+        logging.info('Added %s to client database', job.client_name)
 
 
     def checkin_client(self, job):
@@ -70,10 +83,12 @@ class Server:
 
         # Authenticate client
         if not self.authenticate_client(job.client_name, job.auth):
-            return {
+            res = {
                 'success': False,
                 'msg': 'Could not authenticate client!'
             }
+            logging.info('Returning: %s', res)
+            return res
 
         # Only point to targets that are online.
         offline_targets = [t for t in job.target_list if t not in self.targets]
@@ -84,11 +99,13 @@ class Server:
         }
 
         # Tell client which targets are online, offline
-        return {
+        res = {
             'success': True,
             'online_targets': online_targets,
             'offline_targets': offline_targets,
         }
+        logging.info('Returning: %s', res)
+        return res
 
 
     def get_tree(self, job):
