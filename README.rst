@@ -8,6 +8,7 @@ Python libraries (pip install)
     - requests
     - gunicorn
     - cffi
+    - jsons
 
 Debian packages (apt install)
     - libgmp3-dev
