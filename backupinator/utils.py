@@ -16,7 +16,13 @@ def random_string(nchar=10):
 
 def get_client_config_filename(client_name):
     '''Conventionalize client config file name.'''
-    return 'client_data/%s/client.ini' % client_name
+
+    # Get the specific one if it exists:
+    filename = 'client_data/%s/client.ini' % client_name
+    if pathlib.Path(filename).exists():
+        return filename
+
+    return 'client_default.ini'
 
 def get_generic_config_val(filename, key, valtype='str'):
     '''Read value from config file.'''
