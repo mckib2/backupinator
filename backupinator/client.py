@@ -167,9 +167,6 @@ if __name__ == '__main__':
 
     client = Client(client_name='client_tester')
 
-    # Try sending a batch job
-    client.dummy_jobs()
-
     # # Try registering
     # client.register()
     #
@@ -178,3 +175,6 @@ if __name__ == '__main__':
 
     # # Checkout job queues
     # client.list_jobs()
+
+    # Try sending a batch job
+    client.dummy_jobs()
