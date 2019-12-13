@@ -3,14 +3,7 @@ Installation
 
 Python libraries (pip install)
     - falcon
-    - lmdb
     - pycryptodomex
     - requests
-    - gunicorn
-    - cffi
+    - gunicorn (or waitress for Windows)
     - jsons
-
-Debian packages (apt install)
-    - libgmp3-dev
-    - lmdb-utils
-    - liblmdb-dev
