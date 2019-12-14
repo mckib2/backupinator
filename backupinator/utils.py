@@ -14,6 +14,14 @@ def random_string(nchar=10):
     '''Generate a random string of fixed length.'''
     return ''.join(choice(string.ascii_letters) for i in range(nchar))
 
+def get_target_config_filename(target_name):
+    '''Conventionalize target config file name.'''
+
+    filename = 'target_data/%s/target.ini' % target_name
+    if pathlib.Path(filename).exists():
+        return filename
+    return 'target_default.ini'
+
 def get_client_config_filename(client_name):
     '''Conventionalize client config file name.'''
 
