@@ -126,16 +126,20 @@ class Client:
             self.jobs[target] += self.defered_jobs[target].copy()
             self.defered_jobs[target] = []
 
-    def send_chunk(self, chunk):
-        '''Send a chunk to targets.'''
+    def send_file(self, filename, target_name):
+        '''Send a file to Server to a specified target to backup.'''
 
-        # Send jobs to online targets
+        # Sanity check
+        assert target_name in self.targets, 'target_name not a valid target!'
 
-        # Queue jobs for offline_targets
+        auth = self.sign_with_priv_key()
+        job = SendFileJob(
+            self.server_address, self.client_name, target_name,
+            filename, auth)
 
-    def calculate_chunks(self, filename):
-        '''Calculate chunks for a changed file.'''
-
+        resp = job.submit()
+        json_data = json.loads(resp.text)
+        print(json_data)
 
     def sync_target(self, target_name):
         '''Ask server for target's tree so we know what to send.'''
@@ -169,12 +173,15 @@ if __name__ == '__main__':
 
     # # Try registering
     # client.register()
-    #
-    # Try checking in
-    client.checkin()
+
+    # # Try checking in
+    # client.checkin()
 
     # # Checkout job queues
     # client.list_jobs()
 
     # # Try sending a batch job
     # client.dummy_jobs()
+
+    # Try sending a file?
+    client.send_file('test_dir1/text1.txt', 'target_tester')

@@ -2,6 +2,7 @@
 
 from time import time
 import logging
+import base64
 
 import jsons # pylint: disable=E0401
 from Cryptodome.PublicKey import RSA # pylint: disable=E0401
@@ -9,6 +10,7 @@ from Cryptodome.Signature import pkcs1_15 # pylint: disable=E0401
 from Cryptodome.Hash import SHA256 # pylint: disable=E0401
 
 from backupinator import DB
+from backupinator.auth import Auth
 from backupinator.job import *
 
 class Server:
@@ -37,11 +39,12 @@ class Server:
             logging.debug('Was RSA key found? %s', rsa_pub_key is not None)
 
         # auth ends up as a dictionary after deserialization...
-        hashed = SHA256.new(auth['message'].encode())
+        auth = jsons.load(auth, Auth)
+        hashed = SHA256.new(auth.message.encode())
         key = RSA.import_key(rsa_pub_key)
         try:
             # decode hex signature
-            signature = bytes.fromhex(auth['hex_signature'])
+            signature = bytes.fromhex(auth.hex_signature)
             pkcs1_15.new(key).verify(hashed, signature)
             logging.debug('Authentication successful!')
             return True
@@ -74,6 +77,7 @@ class Server:
             RegisterClientJob: self.register_client,
             CheckinClientJob: self.checkin_client,
             GetTreeJob: self.get_tree,
+            SendFileJob: self.get_file_from_client,
         }[type(job)](job)
 
     def register_client(self, job):
@@ -147,3 +151,8 @@ class Server:
         #     'success': True,
         #     'msg': '"get_tree" job queued.'
         # }
+
+    def get_file_from_client(self, job):
+        '''Get file from client and store until target gets it.'''
+
+        print(base64.b64decode(job.data))

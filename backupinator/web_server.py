@@ -27,6 +27,5 @@ class ProcessJob:
         # Send back response
         resp.media = msg
 
-
 API = falcon.API()
 API.add_route('/process_job', ProcessJob())

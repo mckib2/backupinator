@@ -10,7 +10,7 @@ class DB:
 
         filepath = pathlib.Path(dirname) / name
         filepath.mkdir(parents=True, exist_ok=True)
-        self.filename = str(filepath)
+        self.filename = str(filepath / 'data.dbm')
 
     def add(self, key, val):
         '''Add entry to database.'''

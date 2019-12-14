@@ -10,7 +10,7 @@ class ClientDB:
 
     def __init__(self, client_name, get_config_val):
         self.client_name = client_name
-        self.filename = 'client_data/%s/tree' % self.client_name
+        self.filename = 'client_data/%s/tree.db' % self.client_name
         pathlib.Path(self.filename).parents[0].mkdir(parents=True, exist_ok=True)
 
         # use client config function
