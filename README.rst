@@ -5,7 +5,7 @@ Python libraries (pip install)
     - falcon
     - pycryptodomex
     - requests
-    - gunicorn (or waitress for Windows)
+    - gunicorn (or waitress and hupper for Windows)
     - jsons
 
 Notes
