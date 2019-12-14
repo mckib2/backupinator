@@ -1,1 +1,1 @@
-waitress-serve --listen=*:8000 backupinator.web_server:API
+hupper -m waitress --listen=*:8000 backupinator.web_server:API
