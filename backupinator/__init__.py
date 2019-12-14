@@ -5,3 +5,4 @@ from .client_db import ClientDB
 from .job import *
 from .server import Server
 from .auth import Auth
+from .target_db import TargetDB
