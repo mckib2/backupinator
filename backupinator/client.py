@@ -170,11 +170,11 @@ if __name__ == '__main__':
     # # Try registering
     # client.register()
     #
-    # # Try checking in
-    # client.checkin()
+    # Try checking in
+    client.checkin()
 
     # # Checkout job queues
     # client.list_jobs()
 
-    # Try sending a batch job
-    client.dummy_jobs()
+    # # Try sending a batch job
+    # client.dummy_jobs()
